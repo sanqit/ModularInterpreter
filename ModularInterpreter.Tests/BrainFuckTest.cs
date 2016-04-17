@@ -71,6 +71,9 @@ namespace ModularInterpreter.Tests
 			yield return new TestCaseData(",.", "#", (Func<object>)(() => '#'));
 			yield return new TestCaseData(",.", "#", (Func<object>)(() => "#"));
 			yield return new TestCaseData(",.,.,.,.,.", "Hello", (Func<object>)(() => "Hello"));
+
+			yield return new TestCaseData("++++++[>++++++++++++<-]>.is H letter\r\n" +
+										  ">++++++++++[>++++++++++<-]>+.is e letter", "He", null);
 		}
 	}
 }

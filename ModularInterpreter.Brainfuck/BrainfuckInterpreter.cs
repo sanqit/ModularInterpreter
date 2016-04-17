@@ -1,20 +1,26 @@
-﻿using ModularInterpreter.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using ModularInterpreter.Core;
 
 namespace ModularInterpreter.Brainfuck
 {
 	public class BrainfuckInterpreter : AbstractModularInterpreter
 	{
-		private int _readBytes = 0;
+		private static readonly Regex CleanCommandRegex = new Regex("[^-+.,<>\\[\\]]",
+			RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.Compiled);
+
 		private readonly byte[] _memory;
-		private byte[] _commands;
 		private int _commandPointer;
+		private byte[] _commands;
+		private string _commandText;
+		private string _input;
 		private int _memoryPointer;
 		private List<byte> _outputBytes;
-		private string _input;
+		private int _readBytes;
 
-		public BrainfuckInterpreter(Func<object> inputFunction, Action<byte> outputAction, int countMemories = 3000) : base(inputFunction, outputAction)
+		public BrainfuckInterpreter(Func<object> inputFunction, Action<byte> outputAction, int countMemories = 3000)
+			: base(inputFunction, outputAction)
 		{
 			_memory = new byte[countMemories];
 		}
@@ -27,12 +33,19 @@ namespace ModularInterpreter.Brainfuck
 		public override void SetCommand(string commandText)
 		{
 			ClearMemory();
+			_commandText = CleanCommand(commandText);
+			//			_commandText = Regex.Replace(commandText, "[^-+.,<>\\[\\]]", string.Empty);
 			_outputBytes = new List<byte>();
 			_memoryPointer = 0;
 			_commandPointer = 0;
 
-			_commands = new byte[commandText.Length * 2];
-			Buffer.BlockCopy(commandText.ToCharArray(), 0, _commands, 0, _commands.Length);
+			_commands = new byte[_commandText.Length*2];
+			Buffer.BlockCopy(_commandText.ToCharArray(), 0, _commands, 0, _commands.Length);
+		}
+
+		private static string CleanCommand(string commandText)
+		{
+			return CleanCommandRegex.Replace(commandText, string.Empty);
 		}
 
 		public override IExecutionResult Execute()
@@ -43,7 +56,7 @@ namespace ModularInterpreter.Brainfuck
 				var brc = 0;
 				while (_commandPointer < _commands.Length)
 				{
-					switch ((char)_commands[_commandPointer])
+					switch ((char) _commands[_commandPointer])
 					{
 						case '>':
 							_memoryPointer++;
@@ -111,12 +124,12 @@ namespace ModularInterpreter.Brainfuck
 		{
 			if (InputFunction != null)
 			{
-				b = (byte)((_input ?? (_input = InputFunction.Invoke().ToString()))[_readBytes]);
+				b = (byte) (_input ?? (_input = InputFunction.Invoke().ToString()))[_readBytes];
 				_readBytes++;
 			}
 			else
 			{
-				b = (byte)(_input[_readBytes]);
+				b = (byte) _input[_readBytes];
 				_readBytes++;
 			}
 		}
