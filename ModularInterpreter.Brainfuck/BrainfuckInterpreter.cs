@@ -1,7 +1,7 @@
-﻿using System;
+﻿using ModularInterpreter.Core;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using ModularInterpreter.Core;
 
 namespace ModularInterpreter.Brainfuck
 {
@@ -10,16 +10,16 @@ namespace ModularInterpreter.Brainfuck
 		private static readonly Regex CleanCommandRegex = new Regex("[^-+.,<>\\[\\]]",
 			RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.Compiled);
 
-		private readonly byte[] _memory;
+		private byte[] _memory;
 		private int _commandPointer;
-		private byte[] _commands;
+		private char[] _commands;
 		private string _commandText;
 		private string _input;
 		private int _memoryPointer;
 		private List<byte> _outputBytes;
 		private int _readBytes;
 
-		public BrainfuckInterpreter(Func<object> inputFunction, Action<byte> outputAction, int countMemories = 3000)
+		public BrainfuckInterpreter(Func<object> inputFunction, Action<byte> outputAction, int countMemories = 3)
 			: base(inputFunction, outputAction)
 		{
 			_memory = new byte[countMemories];
@@ -34,13 +34,11 @@ namespace ModularInterpreter.Brainfuck
 		{
 			ClearMemory();
 			_commandText = CleanCommand(commandText);
-			//			_commandText = Regex.Replace(commandText, "[^-+.,<>\\[\\]]", string.Empty);
 			_outputBytes = new List<byte>();
 			_memoryPointer = 0;
 			_commandPointer = 0;
 
-			_commands = new byte[_commandText.Length*2];
-			Buffer.BlockCopy(_commandText.ToCharArray(), 0, _commands, 0, _commands.Length);
+			_commands = _commandText.ToCharArray();
 		}
 
 		private static string CleanCommand(string commandText)
@@ -56,7 +54,7 @@ namespace ModularInterpreter.Brainfuck
 				var brc = 0;
 				while (_commandPointer < _commands.Length)
 				{
-					switch ((char) _commands[_commandPointer])
+					switch (_commands[_commandPointer])
 					{
 						case '>':
 							_memoryPointer++;
@@ -65,18 +63,23 @@ namespace ModularInterpreter.Brainfuck
 							_memoryPointer--;
 							break;
 						case '+':
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
 							_memory[_memoryPointer]++;
 							break;
 						case '-':
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
 							_memory[_memoryPointer]--;
 							break;
 						case '.':
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
 							InvokeOutputAction(_memory[_memoryPointer]);
 							break;
 						case ',':
-							InvokeInputFunc(out _memory[_memoryPointer]);
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
+							InvokeInputFunc(ref _memory[_memoryPointer]);
 							break;
 						case '[':
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
 							if (_memory[_memoryPointer] == 0)
 							{
 								++brc;
@@ -90,6 +93,7 @@ namespace ModularInterpreter.Brainfuck
 							break;
 
 						case ']':
+							ExtendMemoryIfNeed(ref _memory, ref _memoryPointer);
 							if (_memory[_memoryPointer] != 0)
 							{
 								if (_commands[_commandPointer] == ']') brc++;
@@ -108,10 +112,22 @@ namespace ModularInterpreter.Brainfuck
 
 				return new ExecutionResult(true);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				return new ExecutionResult(false);
+				return new ExecutionResult(false) { Errors = new List<string> { ex.Message } };
 			}
+		}
+
+		private static void ExtendMemoryIfNeed(ref byte[] bytes, ref int pointer)
+		{
+			if (pointer >= bytes.Length)
+				Array.Resize(ref bytes, pointer + 1);
+			else if (pointer < 0)
+			{
+				Array.Resize(ref bytes, bytes.Length + (-1 * pointer));
+				pointer = 0;
+			}
+
 		}
 
 		private void InvokeOutputAction(byte b)
@@ -120,16 +136,20 @@ namespace ModularInterpreter.Brainfuck
 			_outputBytes.Add(b);
 		}
 
-		private void InvokeInputFunc(out byte b)
+		private void InvokeInputFunc(ref byte b)
 		{
 			if (InputFunction != null)
 			{
-				b = (byte) (_input ?? (_input = InputFunction.Invoke().ToString()))[_readBytes];
+				if (_input == null)
+					_input = InputFunction.Invoke().ToString();
+				if (_input.Length <= _readBytes)
+					return;
+				b = (byte)_input[_readBytes];
 				_readBytes++;
 			}
 			else
 			{
-				b = (byte) _input[_readBytes];
+				b = (byte)_input[_readBytes];
 				_readBytes++;
 			}
 		}

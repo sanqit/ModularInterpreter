@@ -1,4 +1,5 @@
-﻿using ModularInterpreter.Core;
+﻿using System;
+using ModularInterpreter.Core;
 
 namespace ModularInterpreter.Brainfuck.Console
 {
@@ -6,13 +7,15 @@ namespace ModularInterpreter.Brainfuck.Console
 	{
 		public static void Main()
 		{
-			var isSuccess = false;
-			while (!isSuccess)
+			while (true)
 			{
 				AbstractModularInterpreter interpreter = new BrainfuckInterpreter(ReadFunction, WriteAction);
 				System.Console.WriteLine("Enter your command");
 				interpreter.SetCommand(System.Console.ReadLine());
-				isSuccess = interpreter.Execute().IsSuccess;
+				var result = interpreter.Execute();
+				if(!result.IsSuccess)
+					System.Console.WriteLine(string.Join(Environment.NewLine, result.Errors));
+				break;
 			}
 
 			System.Console.ReadLine();

@@ -21,7 +21,9 @@ namespace ModularInterpreter.Tests
 
 			AbstractModularInterpreter interpreter = new BrainfuckInterpreter(inputFunc, outputAction);
 			interpreter.SetCommand(command);
-			interpreter.Execute();
+			var ex = interpreter.Execute();
+			Assert.IsTrue(ex.IsSuccess);
+			Assert.IsEmpty(ex.Errors);
 			Assert.AreEqual(result, stringOutput);
 		}
 
@@ -106,6 +108,9 @@ namespace ModularInterpreter.Tests
 <<<-							c3    : decrement loop counter
 ]
 <<++...", "1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 121, 98, 219, ...", null);
+
+			yield return new TestCaseData(",.", "\0", (Func<object>)(() => ""));
+			yield return new TestCaseData("<<+.", "\u0001", (Func<object>)(() => "\u0001"));
 		}
 	}
 }
