@@ -31,7 +31,7 @@ namespace ModularInterpreter.Brainfuck
 			_memoryPointer = 0;
 			_commandPointer = 0;
 
-			_commands = new byte[commandText.Length * sizeof(char)];
+			_commands = new byte[commandText.Length * 2];
 			Buffer.BlockCopy(commandText.ToCharArray(), 0, _commands, 0, _commands.Length);
 		}
 
