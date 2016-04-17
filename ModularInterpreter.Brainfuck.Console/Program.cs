@@ -1,5 +1,5 @@
-﻿using System;
-using ModularInterpreter.Core;
+﻿using ModularInterpreter.Core;
+using System;
 
 namespace ModularInterpreter.Brainfuck.Console
 {
@@ -7,18 +7,16 @@ namespace ModularInterpreter.Brainfuck.Console
 	{
 		public static void Main()
 		{
-			while (true)
+			do
 			{
 				AbstractModularInterpreter interpreter = new BrainfuckInterpreter(ReadFunction, WriteAction);
 				System.Console.WriteLine("Enter your command");
 				interpreter.SetCommand(System.Console.ReadLine());
 				var result = interpreter.Execute();
-				if(!result.IsSuccess)
+				if (!result.IsSuccess)
 					System.Console.WriteLine(string.Join(Environment.NewLine, result.Errors));
-				break;
-			}
-
-			System.Console.ReadLine();
+				System.Console.WriteLine("\r\nPress e for exit or enter to continue");
+			} while (System.Console.ReadKey().Key != ConsoleKey.E);
 		}
 
 		private static void WriteAction(byte c)
@@ -28,6 +26,7 @@ namespace ModularInterpreter.Brainfuck.Console
 
 		public static object ReadFunction()
 		{
+			System.Console.WriteLine("Write line please");
 			return System.Console.ReadLine();
 		}
 	}
